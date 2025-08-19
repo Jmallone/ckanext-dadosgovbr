@@ -14,12 +14,19 @@
 </div>
 
 <div role="main">
-
   <div class="container">
     <div class="row row2">
       <div class="span7 col1">
-        {# Get "Noticias" from Wordpress #}
-        {% snippet 'wordpress/snippets/latest_posts.html' %}
+        {# Seção de Destaque #}
+        <div class="module-content">
+          <h2 class="page-heading">Destaques</h2>
+          <div class="row">
+            <div class="span12">
+              <p>Bem-vindo ao portal de dados abertos do governo brasileiro.</p>
+              <p>Aqui você encontrará informações, aplicativos e recursos para explorar dados governamentais.</p>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="span5">
         {% snippet 'home/snippets/tags.html' %}

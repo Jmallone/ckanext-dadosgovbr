@@ -10,7 +10,6 @@ import json
 # Custom helper imports - direct imports
 try:
     from ckanext.dadosgovbr.helpers import tools
-    from ckanext.dadosgovbr.helpers import wordpress
     from ckanext.dadosgovbr.helpers import scheming
 except ImportError:
     # Fallback to the old way
@@ -158,10 +157,6 @@ class DadosgovbrPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
         return {
             # Homepage
             'dadosgovbr_most_recent_datasets': tools.most_recent_datasets,
-
-            # Wordpress
-            'dadosgovbr_wordpress_posts': wordpress.posts,
-            'dadosgovbr_format_timestamp': wordpress.format_timestamp,
 
             # Scheming
             'dadosgovbr_get_schema_name': scheming.get_schema_name,

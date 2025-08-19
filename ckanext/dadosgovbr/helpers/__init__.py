@@ -18,12 +18,10 @@ current_dir = os.path.dirname(__file__)
 try:
     # Import the modules first
     import ckanext.dadosgovbr.helpers.tools
-    import ckanext.dadosgovbr.helpers.wordpress
     import ckanext.dadosgovbr.helpers.scheming
     
     # Make them available as attributes
     tools = ckanext.dadosgovbr.helpers.tools
-    wordpress = ckanext.dadosgovbr.helpers.wordpress
     scheming = ckanext.dadosgovbr.helpers.scheming
     
     # Also import functions directly for convenience
@@ -34,14 +32,12 @@ try:
         eouv_is_avaliable, helper_get_contador_eouv
     )
 
-    from ckanext.dadosgovbr.helpers.wordpress import posts, format_timestamp
     from ckanext.dadosgovbr.helpers.scheming import get_schema_name, get_schema_title
     
 except ImportError as e:
     # If absolute imports fail, try relative imports
     try:
         from . import tools
-        from . import wordpress  
         from . import scheming
 
         # Import all functions directly for easy access
@@ -52,7 +48,6 @@ except ImportError as e:
             eouv_is_avaliable, helper_get_contador_eouv
         )
 
-        from .wordpress import posts, format_timestamp
         from .scheming import get_schema_name, get_schema_title
         
     except ImportError as e2:
