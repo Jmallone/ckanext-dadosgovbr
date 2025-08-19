@@ -7,23 +7,8 @@ from collections import OrderedDict
 from flask import redirect, request
 import json
 
-# Custom helper imports - with fallback
-try:
-    from ckanext.dadosgovbr.helpers.tools import (
-        most_recent_datasets, trim_string, trim_letter, resource_count,
-        get_featured_group, get_organization_extra, get_package,
-        cache_create, cache_load, group_id_or_name_exists,
-        eouv_is_avaliable, helper_get_contador_eouv
-    )
-    from ckanext.dadosgovbr.helpers.wordpress import posts, format_timestamp
-    from ckanext.dadosgovbr.helpers.scheming import get_schema_name, get_schema_title
-    
-    # If we get here, all imports succeeded
-    USE_DIRECT_IMPORTS = True
-except ImportError as e:
-    # Fallback to the old way
-    from ckanext.dadosgovbr import helpers
-    USE_DIRECT_IMPORTS = False
+# Custom helper imports
+from ckanext.dadosgovbr import helpers
 
 
 class DadosgovbrPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
@@ -164,60 +149,31 @@ class DadosgovbrPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
         # extension they belong to, to avoid clashing with functions from
         # other extensions.
         
-        if USE_DIRECT_IMPORTS:
-            return {
-                # Homepage
-                'dadosgovbr_most_recent_datasets': most_recent_datasets,
+        return {
+            # Homepage
+            'dadosgovbr_most_recent_datasets': helpers.tools.most_recent_datasets,
 
-                # Wordpress
-                'dadosgovbr_wordpress_posts': posts,
-                'dadosgovbr_format_timestamp': format_timestamp,
+            # Wordpress
+            'dadosgovbr_wordpress_posts': helpers.wordpress.posts,
+            'dadosgovbr_format_timestamp': helpers.wordpress.format_timestamp,
 
-                # Scheming
-                'dadosgovbr_get_schema_name': get_schema_name,
-                'dadosgovbr_get_schema_title': get_schema_title,
+            # Scheming
+            'dadosgovbr_get_schema_name': helpers.scheming.get_schema_name,
+            'dadosgovbr_get_schema_title': helpers.scheming.get_schema_title,
 
-                # Generict tools
-                'dadosgovbr_trim_string': trim_string,
-                'dadosgovbr_trim_letter': trim_letter,
-                'dadosgovbr_resource_count': resource_count,
-                'dadosgovbr_get_featured_group': get_featured_group,
-                'dadosgovbr_get_organization_extra': get_organization_extra,
-                'dadosgovbr_get_package': get_package,
-                'dadosgovbr_cache_create': cache_create,
-                'dadosgovbr_cache_load': cache_load,
-                'dadosgovbr_group_id_or_name_exists': group_id_or_name_exists,
+            # Generict tools
+            'dadosgovbr_trim_string': helpers.tools.trim_string,
+            'dadosgovbr_trim_letter': helpers.tools.trim_letter,
+            'dadosgovbr_resource_count': helpers.tools.resource_count,
+            'dadosgovbr_get_featured_group': helpers.tools.get_featured_group,
+            'dadosgovbr_get_organization_extra': helpers.tools.get_organization_extra,
+            'dadosgovbr_get_package': helpers.tools.get_package,
+            'dadosgovbr_cache_create': helpers.tools.cache_create,
+            'dadosgovbr_cache_load': helpers.tools.cache_load,
+            'dadosgovbr_group_id_or_name_exists': helpers.tools.group_id_or_name_exists,
 
-                # e-Ouv
-                'dadosgovbr_eouv_is_avaliable': eouv_is_avaliable,
-                'dadosgovbr_get_contador_eouv': helper_get_contador_eouv
-            }
-        else:
-            return {
-                # Homepage
-                'dadosgovbr_most_recent_datasets': helpers.tools.most_recent_datasets,
-
-                # Wordpress
-                'dadosgovbr_wordpress_posts': helpers.wordpress.posts,
-                'dadosgovbr_format_timestamp': helpers.wordpress.format_timestamp,
-
-                # Scheming
-                'dadosgovbr_get_schema_name': helpers.scheming.get_schema_name,
-                'dadosgovbr_get_schema_title': helpers.scheming.get_schema_title,
-
-                # Generict tools
-                'dadosgovbr_trim_string': helpers.tools.trim_string,
-                'dadosgovbr_trim_letter': helpers.tools.trim_letter,
-                'dadosgovbr_resource_count': helpers.tools.resource_count,
-                'dadosgovbr_get_featured_group': helpers.tools.get_featured_group,
-                'dadosgovbr_get_organization_extra': helpers.tools.get_organization_extra,
-                'dadosgovbr_get_package': helpers.tools.get_package,
-                'dadosgovbr_cache_create': helpers.tools.cache_create,
-                'dadosgovbr_cache_load': helpers.tools.cache_load,
-                'dadosgovbr_group_id_or_name_exists': helpers.tools.group_id_or_name_exists,
-
-                # e-Ouv
-                'dadosgovbr_eouv_is_avaliable': helpers.tools.eouv_is_avaliable,
-                'dadosgovbr_get_contador_eouv': helpers.tools.helper_get_contador_eouv
-            }
+            # e-Ouv
+            'dadosgovbr_eouv_is_avaliable': helpers.tools.eouv_is_avaliable,
+            'dadosgovbr_get_contador_eouv': helpers.tools.helper_get_contador_eouv
+        }
         
