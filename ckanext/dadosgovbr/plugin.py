@@ -72,6 +72,10 @@ class DadosgovbrPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
             return redirect(url_current.replace(toolkit.g.site_url,'')+'s')
         return search_params
 
+    def before_dataset_search(self, data_dict):
+        """Called before dataset search is performed"""
+        return data_dict
+
     def after_search(self, search_results, search_params):
         return search_results
 
