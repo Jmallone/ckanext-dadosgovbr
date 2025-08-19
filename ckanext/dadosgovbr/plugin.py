@@ -25,7 +25,7 @@ class DadosgovbrPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
         - Define mapeamento para novas rotas
         - Define novos helpers
     '''
-    plugins.implements(plugins.IPackageController)
+    plugins.implements(plugins.IDatasetForm)
     plugins.implements(plugins.IConfigurer)
     plugins.implements(plugins.ITemplateHelpers)
 
@@ -35,6 +35,33 @@ class DadosgovbrPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
     # =======================================================
     def scheming_get_types(self):
         return ['concurso', 'aplicativo', 'inventario']
+
+    def _modify_package_schema(self, schema):
+        """Modify package schema for custom fields"""
+        return schema
+
+    def create_package_schema(self):
+        """Create package schema"""
+        schema = super(DadosgovbrPlugin, self).create_package_schema()
+        return self._modify_package_schema(schema)
+
+    def update_package_schema(self):
+        """Update package schema"""
+        schema = super(DadosgovbrPlugin, self).update_package_schema()
+        return self._modify_package_schema(schema)
+
+    def show_package_schema(self):
+        """Show package schema"""
+        schema = super(DadosgovbrPlugin, self).show_package_schema()
+        return self._modify_package_schema(schema)
+
+    def is_fallback(self):
+        """Return False to indicate this is not the default dataset form"""
+        return False
+
+    def package_types(self):
+        """Return the package types this plugin handles"""
+        return self.scheming_get_types()
 
     def read(self, entity):
         # HACK: Show private package or resource (block for not logged in users)
@@ -75,6 +102,10 @@ class DadosgovbrPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
     def before_dataset_search(self, data_dict):
         """Called before dataset search is performed"""
         return data_dict
+
+    def after_dataset_search(self, search_results, data_dict):
+        """Called after dataset search is performed"""
+        return search_results
 
     def after_search(self, search_results, search_params):
         return search_results
