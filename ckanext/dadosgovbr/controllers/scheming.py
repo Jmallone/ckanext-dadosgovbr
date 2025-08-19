@@ -5,6 +5,8 @@ from urllib.parse import urlencode
 import datetime
 import mimetypes
 import cgi
+import json
+from collections import OrderedDict
 
 
 from ckan.common import config
@@ -25,7 +27,6 @@ import ckan.plugins as p
 import ckan.lib.render
 import ckan.plugins.toolkit as toolkit
 
-from ckan.common import OrderedDict, _, json, g
 from flask import request, response
 #from home import CACHE_PARAMETERS
 
@@ -105,7 +106,7 @@ class SchemingPagesController(PackageController):
                        'auth_user_obj': toolkit.g.userobj}
             check_access('site_read', context)
         except NotAuthorized:
-            toolkit.abort(403, _('Not authorized to see this page'))
+            toolkit.abort(403, toolkit._('Not authorized to see this page'))
 
         # unicode format (decoded from utf8)
         q = toolkit.g.q = request.params.get('q', '')
@@ -183,11 +184,11 @@ class SchemingPagesController(PackageController):
 
             facets = OrderedDict()
 
-            default_facet_titles = {'organization': _('Organizations'),
-                                    'groups': _('Groups'),
-                                    'tags': _('Tags'),
-                                    'res_format': _('Formats'),
-                                    'license_id': _('Licenses')}
+            default_facet_titles = {'organization': toolkit._('Organizations'),
+                                    'groups': toolkit._('Groups'),
+                                    'tags': toolkit._('Tags'),
+                                    'res_format': toolkit._('Formats'),
+                                    'license_id': toolkit._('Licenses')}
 
             package_type_facets = 'organization groups tags res_format license_id'
             for facet in config.get('search.facets', package_type_facets.split()):
@@ -236,7 +237,7 @@ class SchemingPagesController(PackageController):
             # User's search parameters are invalid, in such a way that is not
             # achievable with the web interface, so return a proper error to
             # discourage this.
-            toolkit.abort(400, _('Invalid search query: {error_message}')
+            toolkit.abort(400, toolkit._('Invalid search query: {error_message}')
                     .format(error_message=str(se)))
         except SearchError as se:
             # May be bad input from the user, but may also be more serious like
@@ -268,7 +269,7 @@ class SchemingPagesController(PackageController):
             toolkit.g.pkg_dict = get_action('package_show')(context, data_dict)
             toolkit.g.pkg = context['package']
         except (NotFound, NotAuthorized):
-            toolkit.abort(404, _('Dataset not found'))
+            toolkit.abort(404, toolkit._('Dataset not found'))
 
         package_type = toolkit.g.pkg_dict['type'] or 'dataset'
 

@@ -3,7 +3,7 @@
 
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
-from ckan.common import OrderedDict
+from collections import OrderedDict
 from flask import redirect, request, g
 from ckan.lib.helpers import full_current_url
 from ckan.model import Package

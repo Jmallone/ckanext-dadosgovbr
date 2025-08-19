@@ -3,6 +3,7 @@
 import logging
 import datetime
 from urllib.parse import urlencode
+from collections import OrderedDict
 
 import ckan.lib.base as base
 import ckan.lib.helpers as h
@@ -14,7 +15,7 @@ import ckan.authz as authz
 import ckan.lib.plugins
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
-from ckan.common import OrderedDict, config, _, g
+from ckan.common import config
 from flask import request
 
 log = logging.getLogger(__name__)
@@ -64,7 +65,7 @@ class TestController(OrganizationController):
             toolkit.g.group_dict = self._action('group_show')(context, data_dict)
             toolkit.g.group = context['group']
         except (NotFound, NotAuthorized):
-            toolkit.abort(404, _('Group not found'))
+            toolkit.abort(404, toolkit._('Group not found'))
 
         self._read_dataset(id, limit, group_type)
         
@@ -147,11 +148,11 @@ class TestController(OrganizationController):
 
             facets = OrderedDict()
 
-            default_facet_titles = {'organization': _('Organizations'),
-                                    'groups': _('Groups'),
-                                    'tags': _('Tags'),
-                                    'res_format': _('Formats'),
-                                    'license_id': _('Licenses')}
+            default_facet_titles = {'organization': toolkit._('Organizations'),
+                                    'groups': toolkit._('Groups'),
+                                    'tags': toolkit._('Tags'),
+                                    'res_format': toolkit._('Formats'),
+                                    'license_id': toolkit._('Licenses')}
 
             package_type_facets = 'organization groups tags res_format license_id'
             for facet in config.get('search.facets', package_type_facets.split()):
@@ -237,7 +238,7 @@ class TestController(OrganizationController):
             toolkit.g.group_dict = self._action('group_show')(context, data_dict)
             toolkit.g.group = context['group']
         except (NotFound, NotAuthorized):
-            toolkit.abort(404, _('Group not found'))
+            toolkit.abort(404, toolkit._('Group not found'))
 
         self._read_aplicativo(id, limit, group_type)
         
@@ -320,11 +321,11 @@ class TestController(OrganizationController):
 
             facets = OrderedDict()
 
-            default_facet_titles = {'organization': _('Organizations'),
-                                    'groups': _('Groups'),
-                                    'tags': _('Tags'),
-                                    'res_format': _('Formats'),
-                                    'license_id': _('Licenses')}
+            default_facet_titles = {'organization': toolkit._('Organizations'),
+                                    'groups': toolkit._('Groups'),
+                                    'tags': toolkit._('Tags'),
+                                    'res_format': toolkit._('Formats'),
+                                    'license_id': toolkit._('Licenses')}
 
             package_type_facets = 'organization groups tags res_format license_id'
             for facet in config.get('search.facets', package_type_facets.split()):
@@ -410,7 +411,7 @@ class TestController(OrganizationController):
             toolkit.g.group_dict = self._action('group_show')(context, data_dict)
             toolkit.g.group = context['group']
         except (NotFound, NotAuthorized):
-            toolkit.abort(404, _('Group not found'))
+            toolkit.abort(404, toolkit._('Group not found'))
 
         self._read_concurso(id, limit, group_type)
         
@@ -493,11 +494,11 @@ class TestController(OrganizationController):
 
             facets = OrderedDict()
 
-            default_facet_titles = {'organization': _('Organizations'),
-                                    'groups': _('Groups'),
-                                    'tags': _('Tags'),
-                                    'res_format': _('Formats'),
-                                    'license_id': _('Licenses')}
+            default_facet_titles = {'organization': toolkit._('Organizations'),
+                                    'groups': toolkit._('Groups'),
+                                    'tags': toolkit._('Tags'),
+                                    'res_format': toolkit._('Formats'),
+                                    'license_id': toolkit._('Licenses')}
 
             package_type_facets = 'organization groups tags res_format license_id'
             for facet in config.get('search.facets', package_type_facets.split()):

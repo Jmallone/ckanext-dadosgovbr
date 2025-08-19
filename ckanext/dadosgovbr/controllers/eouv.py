@@ -6,8 +6,9 @@ from ckan import model
 import ckan.lib.base as base
 from flask import request, response, redirect
 import requests
+from collections import OrderedDict
 
-from ckan.common import OrderedDict, config
+from ckan.common import config
 
 ''' Integração com a Ouvidoria do Governo Federal Brasileiro
 
