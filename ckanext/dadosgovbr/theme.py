@@ -1,9 +1,9 @@
 import os
-from ckan.plugins import implements, SingletonPlugin
+import ckan.plugins as plugins
 from ckan.plugins import IConfigurer
 import ckan.plugins.toolkit
 
-class DadosGovBrTheme(SingletonPlugin):
+class DadosGovBrTheme(plugins.SingletonPlugin):
     '''The theme for the dados.gov.br site.
 
     Uses CKAN's IConfigurer plugin interface to override some of CKAN's
@@ -11,7 +11,7 @@ class DadosGovBrTheme(SingletonPlugin):
     package.
 
     '''
-    implements(IConfigurer, inherit=True)
+    plugins.implements(IConfigurer, inherit=True)
 
     def update_config(self, config):
         '''This IConfigurer implementation causes CKAN to look in the

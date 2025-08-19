@@ -1,15 +1,15 @@
 import os
-from ckan.plugins import implements, SingletonPlugin
+import ckan.plugins as plugins
 from ckan.plugins import IRoutes
 
-class DadosGovBrNewsSection(SingletonPlugin):
+class DadosGovBrNewsSection(plugins.SingletonPlugin):
     '''The feed reader for the dados.gov.br site.
 
     Uses CKAN's IRoutes plugin interface to call the feed reader feature from this plugin
     package.
 
     '''
-    implements(IRoutes, inherit=True)
+    plugins.implements(IRoutes, inherit=True)
 
     def before_map(self, map):
         map.connect('home', '/',

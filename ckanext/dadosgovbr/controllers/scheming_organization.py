@@ -2,9 +2,7 @@
 
 import logging
 import datetime
-from urllib import urlencode
-
-from pylons.i18n import get_lang
+from urllib.parse import urlencode
 
 import ckan.lib.base as base
 import ckan.lib.helpers as h
@@ -15,12 +13,11 @@ import ckan.model as model
 import ckan.authz as authz
 import ckan.lib.plugins
 import ckan.plugins as plugins
-from ckan.common import OrderedDict, c, config, request, _
+import ckan.plugins.toolkit as toolkit
+from ckan.common import OrderedDict, config, _, g
+from flask import request
 
 log = logging.getLogger(__name__)
-
-render = base.render
-abort = base.abort
 
 NotFound = logic.NotFound
 NotAuthorized = logic.NotAuthorized
@@ -32,66 +29,66 @@ clean_dict = logic.clean_dict
 parse_params = logic.parse_params
 
 lookup_group_plugin = ckan.lib.plugins.lookup_group_plugin
-lookup_group_controller = ckan.lib.plugins.lookup_group_controller
+lookup_group_controller = ckan.lib.plugins.lookup_group_plugin
 
 from ckan.controllers.organization import OrganizationController
 
 class TestController(OrganizationController):
     def index (ctrl):
-        return render("test.html")
+        return toolkit.render("test.html")
 
     def read_dataset(self, id, limit=20):
         
         # Variáveis para a view identificar qual guia deve ser ativada e definir o tipo de resultado
         # nos resultados. 
-        c.dataset = True
-        c.aplicativo = False
-        c.concurso = False
+        toolkit.g.dataset = True
+        toolkit.g.aplicativo = False
+        toolkit.g.concurso = False
 
         group_type = self._ensure_controller_matches_group_type(
             id.split('@')[0])
 
         context = {'model': model, 'session': model.Session,
-                   'user': c.user,
+                   'user': toolkit.g.user,
                    'schema': self._db_to_form_schema(group_type=group_type),
                    'for_view': True}
         data_dict = { 'id': id, 'type': group_type}
 
         # unicode format (decoded from utf8)
-        c.q = request.params.get('q', '')
+        toolkit.g.q = request.params.get('q', '')
 
         try:
             # Do not query for the group datasets when dictizing, as they will
             # be ignored and get requested on the controller anyway
             data_dict['include_datasets'] = True
-            c.group_dict = self._action('group_show')(context, data_dict)
-            c.group = context['group']
+            toolkit.g.group_dict = self._action('group_show')(context, data_dict)
+            toolkit.g.group = context['group']
         except (NotFound, NotAuthorized):
-            abort(404, _('Group not found'))
+            toolkit.abort(404, _('Group not found'))
 
         self._read_dataset(id, limit, group_type)
         
-        return render('organization/view_scheming_organization.html')
+        return toolkit.render('organization/view_scheming_organization.html')
 
-        #return render(self._read_template(c.group_dict['type']),
+        #return toolkit.render(self._read_template(toolkit.g.group_dict['type']),
         #              extra_vars={'group_type': group_type})
 
     def _read_dataset(self, id, limit, group_type):
         ''' This is common code used by both read and bulk_process'''
         context = {'model': model, 'session': model.Session,
-                   'user': c.user,
+                   'user': toolkit.g.user,
                    'schema': self._db_to_form_schema(group_type=group_type),
                    'for_view': True, 'extras_as_string': True}
 
-        q = c.q = request.params.get('q', '')
+        q = toolkit.g.q = request.params.get('q', '')
         # Search within group
-        if c.group_dict.get('is_organization'):
-            q += ' owner_org:"%s"' % c.group_dict.get('id')
+        if toolkit.g.group_dict.get('is_organization'):
+            q += ' owner_org:"%s"' % toolkit.g.group_dict.get('id')
         else:
-            q += ' groups:"%s"' % c.group_dict.get('name')
+            q += ' groups:"%s"' % toolkit.g.group_dict.get('name')
 
-        c.description_formatted = \
-            h.render_markdown(c.group_dict.get('description'))
+        toolkit.g.description_formatted = \
+            h.render_markdown(toolkit.g.group_dict.get('description'))
 
         context['return_query'] = True
 
@@ -104,27 +101,27 @@ class TestController(OrganizationController):
 
         def search_url(params):
             controller = lookup_group_controller(group_type)
-            action = 'bulk_process' if c.action == 'bulk_process' else 'read'
+            action = 'bulk_process' if toolkit.g.action == 'bulk_process' else 'read'
             url = h.url_for(controller=controller, action=action, id=id)
-            params = [(k, v.encode('utf-8') if isinstance(v, basestring)
+            params = [(k, v.encode('utf-8') if isinstance(v, str)
                        else str(v)) for k, v in params]
-            return url + u'?' + urlencode(params)
+            return url + '?' + urlencode(params)
 
         def drill_down_url(**by):
             return h.add_url_param(alternative_url=None,
                                    controller='group', action='read',
-                                   extras=dict(id=c.group_dict.get('name')),
+                                   extras=dict(id=toolkit.g.group_dict.get('name')),
                                    new_params=by)
 
-        c.drill_down_url = drill_down_url
+        toolkit.g.drill_down_url = drill_down_url
 
         def remove_field(key, value=None, replace=None):
             controller = lookup_group_controller(group_type)
             return h.remove_url_param(key, value=value, replace=replace,
                                       controller=controller, action='read',
-                                      extras=dict(id=c.group_dict.get('name')))
+                                      extras=dict(id=toolkit.g.group_dict.get('name')))
 
-        c.remove_field = remove_field
+        toolkit.g.remove_field = remove_field
 
         def pager_url(q=None, page=None):
             params = list(params_nopage)
@@ -132,19 +129,19 @@ class TestController(OrganizationController):
             return search_url(params)
 
         try:
-            c.fields = []
-            c.fields_grouped = {}
+            toolkit.g.fields = []
+            toolkit.g.fields_grouped = {}
             search_extras = {}
             for (param, value) in request.params.items():
                 if param not in ['q', 'page', 'sort'] \
                         and len(value) and not param.startswith('_'):
                     if not param.startswith('ext_'):
-                        c.fields.append((param, value))
+                        toolkit.g.fields.append((param, value))
                         q += ' %s: "%s"' % (param, value)
-                        if param not in c.fields_grouped:
-                            c.fields_grouped[param] = [value]
+                        if param not in toolkit.g.fields_grouped:
+                            toolkit.g.fields_grouped[param] = [value]
                         else:
-                            c.fields_grouped[param].append(value)
+                            toolkit.g.fields_grouped[param].append(value)
                     else:
                         search_extras[param] = value
 
@@ -156,8 +153,8 @@ class TestController(OrganizationController):
                                     'res_format': _('Formats'),
                                     'license_id': _('Licenses')}
 
-            package_type_facets = u'organization groups tags res_format license_id' 
-            for facet in config.get(u'search.facets', package_type_facets.split()):
+            package_type_facets = 'organization groups tags res_format license_id'
+            for facet in config.get('search.facets', package_type_facets.split()):
                 if facet in default_facet_titles:
                     facets[facet] = default_facet_titles[facet]
                 else:
@@ -166,7 +163,7 @@ class TestController(OrganizationController):
             # Facet titles
             self._update_facet_titles(facets, group_type)
 
-            c.facet_titles = facets
+            toolkit.g.facet_titles = facets
 
             data_dict = {
                 'q': q,
@@ -185,7 +182,7 @@ class TestController(OrganizationController):
                             if k != 'schema')
             query = get_action('package_search')(context_, data_dict)
 
-            c.page = h.Page(
+            toolkit.g.page = h.Page(
                 collection=query['results'],
                 page=page,
                 url=pager_url,
@@ -193,22 +190,22 @@ class TestController(OrganizationController):
                 items_per_page=limit
             )
 
-            c.group_dict['package_count'] = query['count']
+            toolkit.g.group_dict['package_count'] = query['count']
 
-            c.search_facets = query['search_facets']
-            c.search_facets_limits = {}
-            for facet in c.search_facets.keys():
+            toolkit.g.search_facets = query['search_facets']
+            toolkit.g.search_facets_limits = {}
+            for facet in toolkit.g.search_facets.keys():
                 limit = int(request.params.get('_%s_limit' % facet,
                             config.get('search.facets.default', 10)))
-                c.search_facets_limits[facet] = limit
-            c.page.items = query['results']
+                toolkit.g.search_facets_limits[facet] = limit
+            toolkit.g.page.items = query['results']
 
-            c.sort_by_selected = sort_by
+            toolkit.g.sort_by_selected = sort_by
 
         except search.SearchError as se:
             log.error('Group search error: %r', se.args)
-            c.query_error = True
-            c.page = h.Page(collection=[])
+            toolkit.g.query_error = True
+            toolkit.g.page = h.Page(collection=[])
 
         self._setup_template_variables(context, {'id': id},
                                        group_type=group_type)
@@ -217,54 +214,54 @@ class TestController(OrganizationController):
 
         # Variáveis para a view identificar qual guia deve ser ativada e definir o tipo de resultado
         # nos resultados. 
-        c.dataset = False
-        c.aplicativo = True
-        c.concurso = False
+        toolkit.g.dataset = False
+        toolkit.g.aplicativo = True
+        toolkit.g.concurso = False
 
         group_type = self._ensure_controller_matches_group_type(
             id.split('@')[0])
 
         context = {'model': model, 'session': model.Session,
-                   'user': c.user,
+                   'user': toolkit.g.user,
                    'schema': self._db_to_form_schema(group_type=group_type),
                    'for_view': True}
         data_dict = { 'id': id, 'type': group_type}
 
         # unicode format (decoded from utf8)
-        c.q = request.params.get('q', '')
+        toolkit.g.q = request.params.get('q', '')
 
         try:
             # Do not query for the group datasets when dictizing, as they will
             # be ignored and get requested on the controller anyway
             data_dict['include_datasets'] = True
-            c.group_dict = self._action('group_show')(context, data_dict)
-            c.group = context['group']
+            toolkit.g.group_dict = self._action('group_show')(context, data_dict)
+            toolkit.g.group = context['group']
         except (NotFound, NotAuthorized):
-            abort(404, _('Group not found'))
+            toolkit.abort(404, _('Group not found'))
 
         self._read_aplicativo(id, limit, group_type)
         
-        return render('organization/view_scheming_organization.html')
+        return toolkit.render('organization/view_scheming_organization.html')
 
-        #return render(self._read_template(c.group_dict['type']),
+        #return toolkit.render(self._read_template(toolkit.g.group_dict['type']),
         #              extra_vars={'group_type': group_type})
 
     def _read_aplicativo(self, id, limit, group_type):
         ''' This is common code used by both read and bulk_process'''
         context = {'model': model, 'session': model.Session,
-                   'user': c.user,
+                   'user': toolkit.g.user,
                    'schema': self._db_to_form_schema(group_type=group_type),
                    'for_view': True, 'extras_as_string': True}
 
-        q = c.q = request.params.get('q', '')
+        q = toolkit.g.q = request.params.get('q', '')
         # Search within group
-        if c.group_dict.get('is_organization'):
-            q += ' owner_org:"%s"' % c.group_dict.get('id')
+        if toolkit.g.group_dict.get('is_organization'):
+            q += ' owner_org:"%s"' % toolkit.g.group_dict.get('id')
         else:
-            q += ' groups:"%s"' % c.group_dict.get('name')
+            q += ' groups:"%s"' % toolkit.g.group_dict.get('name')
 
-        c.description_formatted = \
-            h.render_markdown(c.group_dict.get('description'))
+        toolkit.g.description_formatted = \
+            h.render_markdown(toolkit.g.group_dict.get('description'))
 
         context['return_query'] = True
 
@@ -277,27 +274,27 @@ class TestController(OrganizationController):
 
         def search_url(params):
             controller = lookup_group_controller(group_type)
-            action = 'bulk_process' if c.action == 'bulk_process' else 'read'
+            action = 'bulk_process' if toolkit.g.action == 'bulk_process' else 'read'
             url = h.url_for(controller=controller, action=action, id=id)
             params = [(k, v.encode('utf-8') if isinstance(v, str)
                        else str(v)) for k, v in params]
-            return url + u'?' + urlencode(params)
+            return url + '?' + urlencode(params)
 
         def drill_down_url(**by):
             return h.add_url_param(alternative_url=None,
                                    controller='group', action='read',
-                                   extras=dict(id=c.group_dict.get('name')),
+                                   extras=dict(id=toolkit.g.group_dict.get('name')),
                                    new_params=by)
 
-        c.drill_down_url = drill_down_url
+        toolkit.g.drill_down_url = drill_down_url
 
         def remove_field(key, value=None, replace=None):
             controller = lookup_group_controller(group_type)
             return h.remove_url_param(key, value=value, replace=replace,
                                       controller=controller, action='read',
-                                      extras=dict(id=c.group_dict.get('name')))
+                                      extras=dict(id=toolkit.g.group_dict.get('name')))
 
-        c.remove_field = remove_field
+        toolkit.g.remove_field = remove_field
 
         def pager_url(q=None, page=None):
             params = list(params_nopage)
@@ -305,19 +302,19 @@ class TestController(OrganizationController):
             return search_url(params)
 
         try:
-            c.fields = []
-            c.fields_grouped = {}
+            toolkit.g.fields = []
+            toolkit.g.fields_grouped = {}
             search_extras = {}
             for (param, value) in request.params.items():
                 if param not in ['q', 'page', 'sort'] \
                         and len(value) and not param.startswith('_'):
                     if not param.startswith('ext_'):
-                        c.fields.append((param, value))
+                        toolkit.g.fields.append((param, value))
                         q += ' %s: "%s"' % (param, value)
-                        if param not in c.fields_grouped:
-                            c.fields_grouped[param] = [value]
+                        if param not in toolkit.g.fields_grouped:
+                            toolkit.g.fields_grouped[param] = [value]
                         else:
-                            c.fields_grouped[param].append(value)
+                            toolkit.g.fields_grouped[param].append(value)
                     else:
                         search_extras[param] = value
 
@@ -329,8 +326,8 @@ class TestController(OrganizationController):
                                     'res_format': _('Formats'),
                                     'license_id': _('Licenses')}
 
-            package_type_facets = u'organization groups tags res_format license_id' 
-            for facet in config.get(u'search.facets', package_type_facets.split()):
+            package_type_facets = 'organization groups tags res_format license_id'
+            for facet in config.get('search.facets', package_type_facets.split()):
                 if facet in default_facet_titles:
                     facets[facet] = default_facet_titles[facet]
                 else:
@@ -339,7 +336,7 @@ class TestController(OrganizationController):
             # Facet titles
             self._update_facet_titles(facets, group_type)
 
-            c.facet_titles = facets
+            toolkit.g.facet_titles = facets
 
             data_dict = {
                 'q': q,
@@ -358,7 +355,7 @@ class TestController(OrganizationController):
                             if k != 'schema')
             query = get_action('package_search')(context_, data_dict)
 
-            c.page = h.Page(
+            toolkit.g.page = h.Page(
                 collection=query['results'],
                 page=page,
                 url=pager_url,
@@ -366,22 +363,22 @@ class TestController(OrganizationController):
                 items_per_page=limit
             )
 
-            c.group_dict['package_count'] = query['count']
+            toolkit.g.group_dict['package_count'] = query['count']
 
-            c.search_facets = query['search_facets']
-            c.search_facets_limits = {}
-            for facet in c.search_facets.keys():
+            toolkit.g.search_facets = query['search_facets']
+            toolkit.g.search_facets_limits = {}
+            for facet in toolkit.g.search_facets.keys():
                 limit = int(request.params.get('_%s_limit' % facet,
                             config.get('search.facets.default', 10)))
-                c.search_facets_limits[facet] = limit
-            c.page.items = query['results']
+                toolkit.g.search_facets_limits[facet] = limit
+            toolkit.g.page.items = query['results']
 
-            c.sort_by_selected = sort_by
+            toolkit.g.sort_by_selected = sort_by
 
-        except search.SearchError, se:
+        except search.SearchError as se:
             log.error('Group search error: %r', se.args)
-            c.query_error = True
-            c.page = h.Page(collection=[])
+            toolkit.g.query_error = True
+            toolkit.g.page = h.Page(collection=[])
 
         self._setup_template_variables(context, {'id': id},
                                        group_type=group_type)
@@ -390,54 +387,54 @@ class TestController(OrganizationController):
         
         # Variáveis para a view identificar qual guia deve ser ativada e definir o tipo de resultado
         # nos resultados. 
-        c.dataset = False
-        c.aplicativo = False
-        c.concurso = True
+        toolkit.g.dataset = False
+        toolkit.g.aplicativo = False
+        toolkit.g.concurso = True
 
         group_type = self._ensure_controller_matches_group_type(
             id.split('@')[0])
 
         context = {'model': model, 'session': model.Session,
-                   'user': c.user,
+                   'user': toolkit.g.user,
                    'schema': self._db_to_form_schema(group_type=group_type),
                    'for_view': True}
         data_dict = { 'id': id, 'type': group_type}
 
         # unicode format (decoded from utf8)
-        c.q = request.params.get('q', '')
+        toolkit.g.q = request.params.get('q', '')
 
         try:
             # Do not query for the group datasets when dictizing, as they will
             # be ignored and get requested on the controller anyway
             data_dict['include_datasets'] = True
-            c.group_dict = self._action('group_show')(context, data_dict)
-            c.group = context['group']
+            toolkit.g.group_dict = self._action('group_show')(context, data_dict)
+            toolkit.g.group = context['group']
         except (NotFound, NotAuthorized):
-            abort(404, _('Group not found'))
+            toolkit.abort(404, _('Group not found'))
 
         self._read_concurso(id, limit, group_type)
         
-        return render('organization/view_scheming_organization.html')
+        return toolkit.render('organization/view_scheming_organization.html')
 
-        #return render(self._read_template(c.group_dict['type']),
+        #return toolkit.render(self._read_template(toolkit.g.group_dict['type']),
         #              extra_vars={'group_type': group_type})
 
     def _read_concurso(self, id, limit, group_type):
         ''' This is common code used by both read and bulk_process'''
         context = {'model': model, 'session': model.Session,
-                   'user': c.user,
+                   'user': toolkit.g.user,
                    'schema': self._db_to_form_schema(group_type=group_type),
                    'for_view': True, 'extras_as_string': True}
 
-        q = c.q = request.params.get('q', '')
+        q = toolkit.g.q = request.params.get('q', '')
         # Search within group
-        if c.group_dict.get('is_organization'):
-            q += ' owner_org:"%s"' % c.group_dict.get('id')
+        if toolkit.g.group_dict.get('is_organization'):
+            q += ' owner_org:"%s"' % toolkit.g.group_dict.get('id')
         else:
-            q += ' groups:"%s"' % c.group_dict.get('name')
+            q += ' groups:"%s"' % toolkit.g.group_dict.get('name')
 
-        c.description_formatted = \
-            h.render_markdown(c.group_dict.get('description'))
+        toolkit.g.description_formatted = \
+            h.render_markdown(toolkit.g.group_dict.get('description'))
 
         context['return_query'] = True
 
@@ -450,27 +447,27 @@ class TestController(OrganizationController):
 
         def search_url(params):
             controller = lookup_group_controller(group_type)
-            action = 'bulk_process' if c.action == 'bulk_process' else 'read'
+            action = 'bulk_process' if toolkit.g.action == 'bulk_process' else 'read'
             url = h.url_for(controller=controller, action=action, id=id)
             params = [(k, v.encode('utf-8') if isinstance(v, str)
                        else str(v)) for k, v in params]
-            return url + u'?' + urlencode(params)
+            return url + '?' + urlencode(params)
 
         def drill_down_url(**by):
             return h.add_url_param(alternative_url=None,
                                    controller='group', action='read',
-                                   extras=dict(id=c.group_dict.get('name')),
+                                   extras=dict(id=toolkit.g.group_dict.get('name')),
                                    new_params=by)
 
-        c.drill_down_url = drill_down_url
+        toolkit.g.drill_down_url = drill_down_url
 
         def remove_field(key, value=None, replace=None):
             controller = lookup_group_controller(group_type)
             return h.remove_url_param(key, value=value, replace=replace,
                                       controller=controller, action='read',
-                                      extras=dict(id=c.group_dict.get('name')))
+                                      extras=dict(id=toolkit.g.group_dict.get('name')))
 
-        c.remove_field = remove_field
+        toolkit.g.remove_field = remove_field
 
         def pager_url(q=None, page=None):
             params = list(params_nopage)
@@ -478,19 +475,19 @@ class TestController(OrganizationController):
             return search_url(params)
 
         try:
-            c.fields = []
-            c.fields_grouped = {}
+            toolkit.g.fields = []
+            toolkit.g.fields_grouped = {}
             search_extras = {}
             for (param, value) in request.params.items():
                 if param not in ['q', 'page', 'sort'] \
                         and len(value) and not param.startswith('_'):
                     if not param.startswith('ext_'):
-                        c.fields.append((param, value))
+                        toolkit.g.fields.append((param, value))
                         q += ' %s: "%s"' % (param, value)
-                        if param not in c.fields_grouped:
-                            c.fields_grouped[param] = [value]
+                        if param not in toolkit.g.fields_grouped:
+                            toolkit.g.fields_grouped[param] = [value]
                         else:
-                            c.fields_grouped[param].append(value)
+                            toolkit.g.fields_grouped[param].append(value)
                     else:
                         search_extras[param] = value
 
@@ -502,8 +499,8 @@ class TestController(OrganizationController):
                                     'res_format': _('Formats'),
                                     'license_id': _('Licenses')}
 
-            package_type_facets = u'organization groups tags res_format license_id' 
-            for facet in config.get(u'search.facets', package_type_facets.split()):
+            package_type_facets = 'organization groups tags res_format license_id'
+            for facet in config.get('search.facets', package_type_facets.split()):
                 if facet in default_facet_titles:
                     facets[facet] = default_facet_titles[facet]
                 else:
@@ -512,7 +509,7 @@ class TestController(OrganizationController):
             # Facet titles
             self._update_facet_titles(facets, group_type)
 
-            c.facet_titles = facets
+            toolkit.g.facet_titles = facets
 
             data_dict = {
                 'q': q,
@@ -531,7 +528,7 @@ class TestController(OrganizationController):
                             if k != 'schema')
             query = get_action('package_search')(context_, data_dict)
 
-            c.page = h.Page(
+            toolkit.g.page = h.Page(
                 collection=query['results'],
                 page=page,
                 url=pager_url,
@@ -539,22 +536,22 @@ class TestController(OrganizationController):
                 items_per_page=limit
             )
 
-            c.group_dict['package_count'] = query['count']
+            toolkit.g.group_dict['package_count'] = query['count']
 
-            c.search_facets = query['search_facets']
-            c.search_facets_limits = {}
-            for facet in c.search_facets.keys():
+            toolkit.g.search_facets = query['search_facets']
+            toolkit.g.search_facets_limits = {}
+            for facet in toolkit.g.search_facets.keys():
                 limit = int(request.params.get('_%s_limit' % facet,
                             config.get('search.facets.default', 10)))
-                c.search_facets_limits[facet] = limit
-            c.page.items = query['results']
+                toolkit.g.search_facets_limits[facet] = limit
+            toolkit.g.page.items = query['results']
 
-            c.sort_by_selected = sort_by
+            toolkit.g.sort_by_selected = sort_by
 
-        except search.SearchError, se:
+        except search.SearchError as se:
             log.error('Group search error: %r', se.args)
-            c.query_error = True
-            c.page = h.Page(collection=[])
+            toolkit.g.query_error = True
+            toolkit.g.page = h.Page(collection=[])
 
         self._setup_template_variables(context, {'id': id},
                                        group_type=group_type)

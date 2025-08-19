@@ -98,7 +98,28 @@ class EouvController(base.BaseController):
             query_update_like = "UPDATE package_eouv SET nro_dislike = "+str(nro_dislikes)+" WHERE package_name = '"+str(package_name)+"'"
             model.Session.execute(query_update_like)
             model.Session.commit()
-        return
+
+        pass
+
+
+    def new_positive(self):
+        ''' Cria nova avaliação positiva '''
+        package_name = request.params.get('package_name')
+        self.vote(1, package_name)
+        return redirect('/dataset/'+package_name)
+
+    def new_negative(self):
+        ''' Cria nova avaliação negativa '''
+        package_name = request.params.get('package_name')
+        self.vote(-1, package_name)
+        return redirect('/dataset/'+package_name)
+
+    def _get_user_info(self):
+        ''' Retorna informações do usuário logado '''
+        context = {'model': model, 'session': model.Session,
+                   'user': toolkit.g.user or toolkit.g.author}
+        return context
+
 
     def helper_get_contador_eouv (self, package_name):
 
@@ -141,7 +162,7 @@ class EouvController(base.BaseController):
         # Obtém informações do package
         from ckan.logic import get_action
         context = {'model': model, 'session': model.Session,
-                'user': c.user or c.author}
+                'user': toolkit.g.user or toolkit.g.author}
         data_dict = {'id': package_id}
         package  = get_action('package_show')(context, data_dict)
 
