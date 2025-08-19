@@ -99,7 +99,7 @@ class TestController(OrganizationController):
             controller = lookup_group_controller(group_type)
             action = 'bulk_process' if c.action == 'bulk_process' else 'read'
             url = h.url_for(controller=controller, action=action, id=id)
-            params = [(k, v.encode('utf-8') if isinstance(v, basestring)
+            params = [(k, v.encode('utf-8') if isinstance(v, str)
                        else str(v)) for k, v in params]
             return url + u'?' + urlencode(params)
 
@@ -198,7 +198,7 @@ class TestController(OrganizationController):
 
             c.sort_by_selected = sort_by
 
-        except search.SearchError, se:
+        except search.SearchError as se:
             log.error('Group search error: %r', se.args)
             c.query_error = True
             c.page = h.Page(collection=[])

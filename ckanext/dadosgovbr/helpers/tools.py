@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-from ckan.lib.base import c, g, h, model
+import ckan.plugins.toolkit as toolkit
+from ckan import model
 import ckan.logic
 from ckan.logic import get_action
 from random import shuffle
@@ -10,12 +11,12 @@ import hashlib, pickle, os, errno, time
 
 
 def trim_string(s, tamanho):
-    s = unicode(s)
-    return s if (len(s) < tamanho) else s[:(tamanho - 5)].rsplit(u" ", 1)[0] + u"..."
+    s = str(s)
+    return s if (len(s) < tamanho) else s[:(tamanho - 5)].rsplit(" ", 1)[0] + "..."
 
 def trim_letter(s, tamanho):
-    s = unicode(s)
-    return s if (len(s) < tamanho) else s[:(tamanho)] + u"..."
+    s = str(s)
+    return s if (len(s) < tamanho) else s[:(tamanho)] + "..."
 
 def eouv_is_avaliable ():
     from ckan.common import config
@@ -67,7 +68,7 @@ def helper_get_contador_eouv (package_name):
 
 def group_id_or_name_exists(name):
     context = {'model': model, 'session': model.Session,
-                'user': c.user or c.author}
+                'user': toolkit.g.user or toolkit.g.author}
     try:
         group_name = ckan.logic.validators.group_id_or_name_exists(name,context)
     except:
@@ -82,10 +83,10 @@ def resource_count():
     try:
         # resource search
         context = {'model': model, 'session': model.Session,
-                   'user': c.user or c.author}
+                   'user': toolkit.g.user or toolkit.g.author}
         data_dict = {
             'query':{},
-            'facet.field':g.facets,
+            'facet.field':toolkit.g.facets,
             'offset':0,
             'limit':0,
             'order_by': None,
@@ -112,7 +113,7 @@ def most_recent_datasets(limit_of_datasets=5):
         from sqlalchemy import desc
 
         context = {'model': model, 'session': model.Session,
-                   'user': c.user or c.author}
+                   'user': toolkit.g.user or toolkit.g.author}
 
         query = model.Session.query(model.Package, model.Activity)
         query = query.filter(model.Activity.object_id==model.Package.id)
@@ -123,7 +124,7 @@ def most_recent_datasets(limit_of_datasets=5):
         most_recent_from_bd = query.all()
         most_recent_datasets = [
             (
-                g.site_url + '/dataset/' + dataset.name,
+                toolkit.g.site_url + '/dataset/' + dataset.name,
                 dataset.title,
                 dataset.author,
                 activity.timestamp.isoformat(),
@@ -133,7 +134,7 @@ def most_recent_datasets(limit_of_datasets=5):
         for dataset, activity in most_recent_from_bd:
             dataset.link = 'dataset/' + dataset.name
             dataset.time = activity.timestamp.strftime("%d/%m/%Y")
-            dataset.organization = h.get_organization(dataset.owner_org)
+            dataset.organization = toolkit.h.get_organization(dataset.owner_org)
             most_recent_datasets.append(dataset)
 
         # Create cache
@@ -156,7 +157,7 @@ def get_organization_extra(org_name, extra_name):
     try:
         if(extra == None):
             # Get extras from org
-            extras = h.get_organization(org_name)['extras']
+            extras = toolkit.h.get_organization(org_name)['extras']
 
             # Search for organization extra by "extra_name"
             for extra in extras:
@@ -241,7 +242,7 @@ def get_featured_group(group_name='dados-em-destaque', number_of_datasets=3):
     """
     from ckan.logic import get_action
     context = {'model': model, 'session': model.Session,
-               'user': c.user or c.author}
+               'user': toolkit.g.user or toolkit.g.author}
     
 
     # Get cache if exist
@@ -277,7 +278,7 @@ def get_package(package_id):
 
     from ckan.logic import get_action
     context = {'model': model, 'session': model.Session,
-               'user': c.user or c.author}
+               'user': toolkit.g.user or toolkit.g.author}
 
     # Get package
     data_dict = {'id': package_id}

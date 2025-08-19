@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import ckan.plugins as p
-import urllib2
-from ckan.lib.base import c, g, h, render, model
+import ckan.plugins.toolkit as toolkit
+from ckan import model
 import ckan.lib.base as base
-from pylons import request, response
-from pylons.controllers.util import redirect
+from flask import request, response, redirect
 import requests
 
 from ckan.common import OrderedDict, config

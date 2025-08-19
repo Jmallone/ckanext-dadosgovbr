@@ -76,7 +76,7 @@ def cache_json(url):
                 request = http.request('GET', url, retries=5) # Request of URL
 
                 # Parse to JSON
-                posts   = json.loads(request.data.decode('utf-8'))
+                posts   = json.loads(request.data)
                 if(request.status > 400):
                     raise
 
@@ -86,7 +86,7 @@ def cache_json(url):
 
                 # Write cache file
                 f       = open(f_name, 'w')
-                f.write(request.data.decode('utf-8'))
+                f.write(request.data)
                 f.close()
 
             # Try again if got some error

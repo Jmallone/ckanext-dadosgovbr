@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import ckan.plugins as p
-from ckan.lib.base import c, g, render, model
-from pylons import request, response
-from pylons.controllers.util import redirect
+import ckan.plugins.toolkit as toolkit
+from ckan import model
+from flask import request, response, redirect
 import requests
 
 # Wordpress integration
@@ -17,51 +17,51 @@ class AplicativosController(p.toolkit.BaseController):
         # Query
         from ckan.logic import get_action
         context = {'model': model, 'session': model.Session,
-                'user': c.user or c.author}
+                'user': toolkit.g.user or toolkit.g.author}
 
         # Get "aplicativos"
         data_dict = {'fq': 'type:aplicativo'}
-        c.aplicativos = get_action('package_search')(context, data_dict)['results']
+        toolkit.g.aplicativos = get_action('package_search')(context, data_dict)['results']
 
         # Get page content from Wordpress
         wp_page_slug = 'scheming_aplicativos'
-        c.wp_page = type('Nothing', (object,), {})  
-        c.wp_page.content = type('Nothing', (object,), {})  
-        c.wp_page.content.rendered = "Conteudo da pagina nao encontrado..."
+        toolkit.g.wp_page = type('Nothing', (object,), {})  
+        toolkit.g.wp_page.content = type('Nothing', (object,), {})  
+        toolkit.g.wp_page.content.rendered = "Conteudo da pagina nao encontrado..."
         try:
-            c.wp_page = wp.page(wp_page_slug)
+            toolkit.g.wp_page = wp.page(wp_page_slug)
         except:
             pass
 
         # DEBUG
         # from pprint import pprint
-        # pprint(c.aplicativos)
+        # pprint(toolkit.g.aplicativos)
 
 
         # Get search params from URL
-        if request.method == 'GET' and 's' in request.GET:
-            c.s_result    = request.GET['s']
+        if request.method == 'GET' and 's' in request.args:
+            toolkit.g.s_result    = request.args['s']
         else:
-            c.s_result    = ""
+            toolkit.g.s_result    = ""
 
 
-        return render('scheming/aplicativo/search_bkp.html')
+        return toolkit.render('scheming/aplicativo/search_bkp.html')
 
 
     
     def single (ctrl, title):
         from ckan.logic import get_action
         context = {'model': model, 'session': model.Session,
-                'user': c.user or c.author}
+                'user': toolkit.g.user or toolkit.g.author}
 
         # Get app
         data_dict = {'id': title, 'include_extras': 'True'}
         app = get_action('package_show')(context, data_dict)
-        c.app_dict = app
+        toolkit.g.app_dict = app
 
         # DEBUG
         from pprint import pprint
         pprint(app)
 
-        c.app_title = title
-        return render("scheming/aplicativo_modal.html")
+        toolkit.g.app_title = title
+        return toolkit.render("scheming/aplicativo_modal.html")

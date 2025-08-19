@@ -3,10 +3,11 @@
 
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
-from ckan.lib.base import c, g, h, model, abort
 from ckan.common import OrderedDict
+from flask import redirect, request, g
+from ckan.lib.helpers import full_current_url
+from ckan.model import Package
 
-from ckan.plugins import implements, SingletonPlugin
 from ckan.plugins import IConfigurer
 from ckan.plugins import IRoutes
 
@@ -26,8 +27,8 @@ class DadosgovbrPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
     plugins.implements(plugins.IPackageController)
     plugins.implements(plugins.IConfigurer)
     plugins.implements(plugins.ITemplateHelpers)
-    implements(IConfigurer, inherit=True)
-    implements(IRoutes, inherit=True)
+    plugins.implements(IConfigurer, inherit=True)
+    plugins.implements(IRoutes, inherit=True)
 
 
 
@@ -38,14 +39,14 @@ class DadosgovbrPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
 
     def read(self, entity):
         # HACK: Show private package or resource (block for not logged in users)
-        if c.action == 'read':
-            if entity.private and not c.user:
-                abort(403, 'Acesso negado!')
+        if request.endpoint == 'package.read':
+            if entity.private and not toolkit.g.user:
+                toolkit.abort(403, 'Acesso negado!')
 
         # HACK: Edit package or resource (block for not logged in users)
-        if c.action == 'edit' or c.action == 'resource_edit':
-            if not c.user:
-                abort(403, 'Acesso negado!') 
+        if request.endpoint in ['package.edit', 'resource.edit']:
+            if not toolkit.g.user:
+                toolkit.abort(403, 'Acesso negado!') 
         
         pass
 
@@ -67,10 +68,9 @@ class DadosgovbrPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
     def before_search(self, search_params):
         # Redirect for search page
         schemas = self.scheming_get_types()
-        url_current = h.full_current_url()
+        url_current = full_current_url()
         if(url_current.replace(g.site_url+'/','') in schemas):
-            from pylons.controllers.util import redirect
-            redirect(url_current.replace(g.site_url,'')+'s')
+            return redirect(url_current.replace(g.site_url,'')+'s')
         return search_params
 
     def after_search(self, search_results, search_params):
@@ -103,17 +103,16 @@ class DadosgovbrPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
     def before_view(self, pkg_dict):
         # Redirect to correct URL based on schema name
         actions_accepted = ['read','edit','new']
-        if (c.action in actions_accepted and c.controller=='package'):
+        if (request.endpoint in ['package.read', 'package.edit', 'package.new']):
             schema_expected = pkg_dict['type']
-            schema_current  = str(h.full_current_url()).replace(g.site_url, '').split('/')[1]
+            schema_current  = str(full_current_url()).replace(g.site_url, '').split('/')[1]
             if (schema_current != schema_expected):
-                from pylons.controllers.util import redirect
-                url_current = h.full_current_url()
+                url_current = full_current_url()
                 url_current = str(url_current).replace(g.site_url+'/'+schema_current, g.site_url+'/'+schema_expected)
                 # print('redir_to',url_current)
                 # print(schema_expected)
                 # print(schema_current)
-                redirect(url_current.replace(g.site_url,''))
+                return redirect(url_current.replace(g.site_url,''))
         return pkg_dict
 
     def after_create(self, context, data_dict):
