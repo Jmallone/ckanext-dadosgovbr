@@ -4,12 +4,8 @@
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
 from collections import OrderedDict
-from flask import redirect, request, g
-from ckan.lib.helpers import full_current_url
-from ckan.model import Package
-
-from ckan.plugins import IConfigurer
-from ckan.plugins import IRoutes
+from flask import redirect, request
+import json
 
 # Custom helper
 from ckanext.dadosgovbr import helpers
@@ -27,8 +23,6 @@ class DadosgovbrPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
     plugins.implements(plugins.IPackageController)
     plugins.implements(plugins.IConfigurer)
     plugins.implements(plugins.ITemplateHelpers)
-    plugins.implements(IConfigurer, inherit=True)
-    plugins.implements(IRoutes, inherit=True)
 
 
 
@@ -68,17 +62,15 @@ class DadosgovbrPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
     def before_search(self, search_params):
         # Redirect for search page
         schemas = self.scheming_get_types()
-        url_current = full_current_url()
-        if(url_current.replace(g.site_url+'/','') in schemas):
-            return redirect(url_current.replace(g.site_url,'')+'s')
+        url_current = toolkit.h.full_current_url()
+        if(url_current.replace(toolkit.g.site_url+'/','') in schemas):
+            return redirect(url_current.replace(toolkit.g.site_url,'')+'s')
         return search_params
 
     def after_search(self, search_results, search_params):
         return search_results
 
     def before_index(self, data_dict):
-        import json, pprint
-
         # All multiValue fields from ckanext-scheming
         multiValue = ['dados_abertos_base', 'atualizacoes_base', 'informacoes_publicas_base']
 
@@ -105,14 +97,14 @@ class DadosgovbrPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
         actions_accepted = ['read','edit','new']
         if (request.endpoint in ['package.read', 'package.edit', 'package.new']):
             schema_expected = pkg_dict['type']
-            schema_current  = str(full_current_url()).replace(g.site_url, '').split('/')[1]
+            schema_current  = str(toolkit.h.full_current_url()).replace(toolkit.g.site_url, '').split('/')[1]
             if (schema_current != schema_expected):
-                url_current = full_current_url()
-                url_current = str(url_current).replace(g.site_url+'/'+schema_current, g.site_url+'/'+schema_expected)
+                url_current = toolkit.h.full_current_url()
+                url_current = str(url_current).replace(toolkit.g.site_url+'/'+schema_current, toolkit.g.site_url+'/'+schema_expected)
                 # print('redir_to',url_current)
                 # print(schema_expected)
                 # print(schema_current)
-                return redirect(url_current.replace(g.site_url,''))
+                return redirect(url_current.replace(toolkit.g.site_url,''))
         return pkg_dict
 
     def after_create(self, context, data_dict):
@@ -140,95 +132,8 @@ class DadosgovbrPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
 
     
     
-    # Mapeamento das URLs
-    # =======================================================
-    def before_map(self, map):
-
-
-        # ckanext-scheming
-        # New organization filters
-        map.connect('/organization/new',
-            controller='ckanext.dadosgovbr.controllers.scheming_organization:TestController',
-            action='new',
-            id=0)
-        
-        map.connect('/organization/{id}',
-                    controller='ckanext.dadosgovbr.controllers.scheming_organization:TestController',
-                    action='read_dataset',
-                    id=0)
-
-        map.connect('/organization/aplicativos/{id}',
-                    controller='ckanext.dadosgovbr.controllers.scheming_organization:TestController',
-                    action='read_aplicativo',
-                    id=0)
-
-        map.connect('/organization/concursos/{id}',
-                    controller='ckanext.dadosgovbr.controllers.scheming_organization:TestController',
-                    action='read_concurso',
-                    id=0)
-
-        # ckanext-scheming
-        # New packages formats
-        for package_type in self.scheming_get_types():
-            map.connect('%s_new' % package_type, '/%s/new' % package_type,
-                            controller='package', action='new')
-            map.connect('/%s/{id}' % package_type,
-                        controller='ckanext.dadosgovbr.controllers.scheming:SchemingPagesController',
-                        action='read',
-                        id='id')
-            map.connect('/%ss' % package_type,
-                        controller='ckanext.dadosgovbr.controllers.scheming:SchemingPagesController',
-                        action='search')
-
-        return map
-
-                    
-    def after_map(self, map):
-        # Testing
-        map.connect('/test',
-                    controller='ckanext.dadosgovbr.controllers.test:TestController',
-                    action='index')
-        map.connect('/test/{id}',
-                    controller='ckanext.dadosgovbr.controllers.test:TestController',
-                    action='read',
-                    id=0)
-                    
-        # e-Ouv
-        map.connect('/eouv/new_positive',
-                    controller='ckanext.dadosgovbr.controllers.eouv:EouvController',
-                    action='new_positive')
-        map.connect('/eouv/new_negative',
-                    controller='ckanext.dadosgovbr.controllers.eouv:EouvController',
-                    action='new_negative')
-                    
-        # Wordpress feed redirect (if load balancer fail)
-        map.connect('/feed',
-                    controller='ckanext.dadosgovbr.controllers.noticias:NoticiasController',
-                    action='feed')
-
-        # Wordpress
-        map.connect('/noticias',
-                    controller='ckanext.dadosgovbr.controllers.wordpress:NoticiasController',
-                    action='list')
-        map.connect('/noticias/{slug}', # Legacy from dados.gov.br 2017 version
-                    controller='ckanext.dadosgovbr.controllers.wordpress:NoticiasController',
-                    action='redirect',
-                    slug=0)
-        map.connect('/noticia/{slug}',
-                    controller='ckanext.dadosgovbr.controllers.wordpress:NoticiasController',
-                    action='show',
-                    slug=0)
-        map.connect('/noticias/{id}/{slug}', # Legacy from dados.gov.br 2016 version
-                    controller='ckanext.dadosgovbr.controllers.wordpress:NoticiasController',
-                    action='redirect',
-                    slug=0)
-        map.connect('/pagina/{slug}', 
-                    controller='ckanext.dadosgovbr.controllers.wordpress:PaginasController',
-                    action='index')
-        map.connect('/paginas/{slug}', # Legacy from dados.gov.br 2016 version
-                    controller='ckanext.dadosgovbr.controllers.wordpress:PaginasController',
-                    action='redirect')
-        return map
+    # Nota: Mapeamento de rotas removido - não é mais suportado no CKAN moderno
+    # As rotas devem ser configuradas via Blueprint ou outro mecanismo
 
 
 
